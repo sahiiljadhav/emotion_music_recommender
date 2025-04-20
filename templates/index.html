@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion-Based Music Recommender</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        video {
+            border: 2px solid #333;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        #emotion, #recommendations {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            width: 300px;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        h1 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Emotion-Based Music Recommender</h1>
+    <video id="webcam" width="320" height="240" autoplay></video>
+    <button onclick="captureImage()">Capture & Recommend</button>
+    <div id="emotion">Emotion: Waiting...</div>
+    <div id="recommendations">Recommendations: Waiting...</div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const emotionDiv = document.getElementById('emotion');
+        const recommendationsDiv = document.getElementById('recommendations');
+
+        // Access webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error("Error accessing webcam:", err);
+            });
+
+        // Capture image and send to backend
+        function captureImage() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const imageData = canvas.toDataURL('image/jpeg');
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                emotionDiv.textContent = `Emotion: ${data.emotion}`;
+                recommendationsDiv.innerHTML = `Recommendations:<br>${data.recommendations.map(song => `• ${song}`).join('<br>')}`;
+            })
+            .catch(err => {
+                console.error("Error predicting:", err);
+            });
+        }
+    </script>
+</body>
+</html>
